@@ -16,7 +16,6 @@ Ce talk s'adresse à toute personne qui opère ou souhaite opérer des clusters 
 
 ## 🎤 Informations pratiques
  
-| | |
 |---|---|
 | **Niveau** | Intermédiaire |
 | **Durée** | 30 minutes |
@@ -85,6 +84,9 @@ npm run dev
 **Mikael Batard** — SRE @ CBA Informatique Libérale
 
 💼 [linkedin.com/in/mbatard](https://www.linkedin.com/in/mbatard/)
+
 🦋 [@mbatard.bsky.social](https://bsky.app/profile/mbatard.bsky.social)
+
 🐙 [github.com/mbatard](https://github.com/mbatard)
+
 🌐 [calmops.fr](https://calmops.fr)
