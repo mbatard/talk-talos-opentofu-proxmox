@@ -3,14 +3,14 @@
 ## 📋 Résumé
 
 A l'heure où l'IA facilite considérablement la compromission d'une infrastructure, laisser un cluster Kubernetes tourner sur un OS généraliste n'est plus une dette technique, c'est un risque opérationnel concret.
-
+ 
 SSH ouvert, système modifiable à la main, configuration jamais auditée : autant de vecteurs d'attaque qui s'accumulent sans que personne ne s'en aperçoive.
-
-Talos Linux change radicalement l'approche : un OS **immutable**, sans shell, sans SSH, piloté exclusivement par API, conçu spécifiquement pour faire tourner Kubernetes de façon sécurisée. Entièrement déclarative et versionnable, la configuration de chaque nœud est auditable et ne peut pas dériver.
-
-Dans ce talk, on va construire ensemble, de zéro, un cluster sous Talos, déployé sur **Proxmox** et entièrement automatisé avec **OpenTofu**. On verra concrètement en quoi Talos diffère d'une installation vanilla, pourquoi c'est sécurisé **by design**, et comment cette approche change le quotidien d'une équipe.
-
-Ce talk s'adresse à **toute personne qui opère ou souhaite opérer des clusters Kubernetes en production, et qui veut aller plus loin dans la sécurisation de son infrastructure.**
+ 
+**Talos Linux** change radicalement l'approche : un OS **immutable**, sans shell, sans SSH, piloté exclusivement par API, conçu spécifiquement pour faire tourner Kubernetes de façon sécurisée. Entièrement déclarative et versionnable, la configuration de chaque nœud est auditable et ne peut pas dériver.
+ 
+Dans ce talk, on va construire ensemble, de zéro, un cluster sous Talos, déployé sur **Proxmox** et entièrement automatisé avec **OpenTofu**. On verra concrètement en quoi Talos diffère d'une installation vanilla, pourquoi c'est sécurisé by design, et comment cette approche change le quotidien d'une équipe.
+ 
+Ce talk s'adresse à toute personne qui opère ou souhaite opérer des clusters Kubernetes en production, et qui veut aller plus loin dans la sécurisation de son infrastructure.
 
 ## 🎤 Informations pratiques
 
