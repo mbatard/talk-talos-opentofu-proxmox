@@ -10,27 +10,22 @@ Talos Linux change radicalement l'approche : un OS **immutable**, sans shell, sa
 
 Dans ce talk, on va construire ensemble, de zéro, un cluster sous Talos, déployé sur **Proxmox** et entièrement automatisé avec **OpenTofu**. On verra concrètement en quoi Talos diffère d'une installation vanilla, pourquoi c'est sécurisé **by design**, et comment cette approche change le quotidien d'une équipe.
 
-Ce talk s'adresse à toute personne qui opère ou souhaite opérer des clusters Kubernetes en production, et qui veut aller plus loin dans la sécurisation de son infrastructure.
-
----
+Ce talk s'adresse à **toute personne qui opère ou souhaite opérer des clusters Kubernetes en production, et qui veut aller plus loin dans la sécurisation de son infrastructure.**
 
 ## 🎤 Informations pratiques
- 
+
+| Critère | Valeur |
 |---|---|
 | **Niveau** | Intermédiaire |
 | **Durée** | 30 minutes |
 | **Format** | Talk + démo live |
 | **Langue** | Français |
- 
----
 
 ## ✅ Pré-requis
 
 - Connaître les concepts de base de Kubernetes (nodes, pods, control plane)
 - Etre à l'aise avec la ligne de commande Linux
 - Notions de base en infrastructure (VM, réseau) sont un plus
-
----
 
 ## 🗂️ Structure du repo
 
@@ -45,8 +40,6 @@ Ce talk s'adresse à toute personne qui opère ou souhaite opérer des clusters 
     └── demo.sh            # Script demo-magic
 ```
 
----
-
 ## 🚀 Lancer les slides
 
 ```bash
@@ -56,8 +49,6 @@ npm run dev
 ```
 
 > Requiert Node.js >= 20.12.0
-
----
 
 ## 🔧 Stack utilisée
 
@@ -69,15 +60,11 @@ npm run dev
 | [Slidev](https://sli.dev) | latest | Slides |
 | [demo-magic](https://github.com/paxtonhare/demo-magic) | latest | Démo live |
 
----
-
 ## 🔗 Pour aller plus loin
 
 - [talos.dev](https://www.talos.dev) — Documentation officielle Talos
 - [factory.talos.dev](https://factory.talos.dev) — Image Factory (extensions)
 - [calmops.fr](https://calmops.fr) — Mon blog
-
----
 
 ## 👤 Auteur
 
