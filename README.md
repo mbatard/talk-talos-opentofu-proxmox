@@ -1,7 +1,5 @@
 # Talos + OpenTofu + Proxmox : l'infra Kubernetes immutable, automatisée et sécurisée
 
----
-
 ## 📋 Résumé
 
 A l'heure où l'IA facilite considérablement la compromission d'une infrastructure, laisser un cluster Kubernetes tourner sur un OS généraliste n'est plus une dette technique, c'est un risque opérationnel concret.
