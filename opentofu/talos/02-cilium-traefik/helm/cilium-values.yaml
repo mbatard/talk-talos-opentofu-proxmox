@@ -1,0 +1,58 @@
+ipam:
+  mode: "kubernetes"
+  operator:
+    clusterPoolIPv4PodCIDRList: ["10.244.0.0/16"]
+    replicas: 1
+policyEnforcementMode: "never"
+hostFirewall:
+  enabled: true
+bpf:
+  masquerade: true
+kubeProxyReplacement: true
+nodePort:
+  enabled: false
+l2announcements:
+  enabled: true
+k8sClientRateLimit:
+  qps: 20
+  burst: 40
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+k8sServiceHost: localhost
+k8sServicePort: 7445
+ipv6:
+  enabled: false
+prometheus:
+  enabled: false
+hubble:
+  enabled: false
+  relay:
+    enabled: false
+  ui:
+    enabled: false
+  metrics:
+    enableOpenMetrics: false
+tls:
+  secretsNamepace:
+    create: false
+    name: cilium-system

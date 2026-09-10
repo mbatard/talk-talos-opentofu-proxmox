@@ -1,0 +1,54 @@
+deployment:
+  kind: DaemonSet
+
+log:
+  level: INFO
+
+accessLog:
+  enabled: true
+  addInternals: true
+  fields:
+    headers:
+      defaultMode: keep
+
+metrics:
+  addInternals: true
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    buckets: "0.100000,0.300000,1.200000,5.000000"
+    entryPoint: metrics
+
+ports:
+  metrics:
+    port: 9100
+
+  traefik:
+    port: 9000
+
+  web:
+    port: 80
+    forwardedHeaders:
+      trustedIPs:
+        - 127.0.0.1/32
+        - 10.0.0.0/8
+        - 192.168.0.0/16
+
+  websecure:
+    port: 443
+    forwardedHeaders:
+      trustedIPs:
+        - 127.0.0.1/32
+        - 10.0.0.0/8
+        - 192.168.0.0/16
+    transport:
+      respondingTimeouts:
+        idleTimeout: 300
+        readTimeout: 300
+        writeTimeout: 300
+
+service:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    lbipam.cilium.io/ips: "10.10.10.200"

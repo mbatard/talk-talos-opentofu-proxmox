@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "slidev --open slides.md",
+    "build": "slidev build slides.md --base ./",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "export": "slidev export slides.md"
+  },
+  "devDependencies": {
+    "@slidev/cli": "latest",
+    "@slidev/theme-default": "^0.25.0"
+  }
+}

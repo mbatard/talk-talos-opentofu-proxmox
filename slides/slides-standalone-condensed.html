@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Talos + OpenTofu + Proxmox</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #23302e;
+      --muted: #75817d;
+      --sage: #7fa889;
+      --sage-soft: #e7f0e8;
+      --lavender: #8b7ac7;
+      --lavender-soft: #eeeafa;
+      --coral: #e88f72;
+      --sand: #f4eadc;
+      --line: rgba(35, 48, 46, .10);
+      --panel: rgba(255, 255, 255, .58);
+      --code: #27312f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .deck { width: 100vw; height: 100vh; }
+    .slide {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      padding: 5vh 7vw;
+      position: relative;
+    }
+    .slide > * { position: relative; z-index: 1; }
+    .slide.active { display: flex; flex-direction: column; justify-content: flex-start; }
+    h1 { max-width: 86%; font-size: clamp(3.4rem, 7.6vw, 6.9rem); font-weight: 600; line-height: 1.15; margin: 0 0 1.4rem; letter-spacing: -.018em; }
+    h2 { color: var(--fg); font-size: clamp(2.2rem, 3.85vw, 3.7rem); font-weight: 560; margin: .5rem 0 1.2rem; letter-spacing: -.01em; line-height: 1.3; }
+    h3 { font-size: 1.75rem; margin: 0 0 .8rem; line-height: 1.3; }
+    p, li { font-size: clamp(1.6rem, 2.5vw, 2.5rem); line-height: 1.6; }
+    ul, ol { margin: 1rem 0 0; padding-left: 1.6rem; }
+    li { margin: .6rem 0; }
+    code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    code { background: rgba(139, 122, 199, .10); color: var(--fg); border: 1px solid rgba(139, 122, 199, .22); padding: .1rem .35rem; border-radius: .45rem; }
+    pre {
+      background: var(--code);
+      color: #f8f5ef;
+      border-radius: 1.1rem;
+      padding: 1.2rem;
+      overflow: auto;
+      font-size: clamp(1.1rem, 1.65vw, 1.55rem);
+      line-height: 1.6;
+      border: 0;
+      box-shadow: 0 18px 45px rgba(35, 48, 46, .12);
+    }
+    table { border-collapse: collapse; width: 100%; font-size: clamp(1.25rem, 1.85vw, 1.7rem); overflow: hidden; border-radius: 1.2rem; background: var(--panel); border: 1px solid rgba(35, 48, 46, .10); box-shadow: 0 18px 50px rgba(35, 48, 46, .08); }
+    th, td { border-bottom: 1px solid rgba(35, 48, 46, .10); padding: .75rem; text-align: left; line-height: 1.5; }
+    th { color: var(--fg); background: var(--sage-soft); }
+    .subtitle { font-size: clamp(2.2rem, 3.85vw, 3.7rem); color: var(--lavender); font-weight: 720; letter-spacing: -.03em; }
+    .muted { color: var(--muted); }
+    .strong { font-weight: 900; font-size: clamp(2.3rem, 3.85vw, 4.1rem); }
+    .kicker { color: var(--lavender); font-weight: 720; letter-spacing: .14em; text-transform: uppercase; font-size: 1.15rem; margin-bottom: 1rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; align-items: start; }
+    .slide.cover-slide.active { justify-content: center; }
+    .slide.intro-slide.active { justify-content: flex-start; }
+    .intro-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2.4rem; align-items: start; width: 100%; margin-top: 0; }
+    .intro-side { display: flex; flex-direction: column; gap: 3rem; min-height: 26rem; }
+    .intro-where { margin-top: auto; }
+    .name-faq { color: var(--muted); font-size: .62em; margin-left: .8rem; white-space: nowrap; }
+    .links { list-style: none; padding-left: 0; margin: 0 0 1.5rem; }
+    .links li { margin: .4rem 0 .9rem; }
+    .links a { color: var(--sage); font-weight: 600; text-decoration: none; }
+    .links a:hover { text-decoration: underline; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card {
+      border: 1px solid rgba(35, 48, 46, .10);
+      background: var(--panel);
+      border-radius: 1.25rem;
+      padding: 1.2rem;
+      box-shadow: 0 16px 42px rgba(35, 48, 46, .07);
+      backdrop-filter: blur(8px);
+    }
+    .card .label { color: var(--muted); font-size: 1.25rem; }
+    .card .value { font-size: 2.2rem; font-weight: 900; margin-top: .3rem; }
+    .note { margin-top: 2rem; color: var(--muted); font-size: 1.55rem; }
+    .quote { margin-top: 2rem; font-size: clamp(2rem, 3.5vw, 3.8rem); font-weight: 720; color: var(--sage); }
+    .qr {
+      width: 150px;
+      height: 150px;
+      margin: 0 auto;
+      border: 8px solid var(--fg);
+      border-radius: 1rem;
+      background:
+        linear-gradient(90deg, var(--fg) 14px, transparent 14px) 16px 16px / 38px 38px,
+        linear-gradient(var(--fg) 14px, transparent 14px) 16px 16px / 38px 38px,
+        conic-gradient(from 90deg, var(--fg) 90deg, #fffaf0 0 180deg, var(--fg) 0 270deg, #fffaf0 0) 0 0 / 24px 24px;
+      image-rendering: pixelated;
+      box-shadow: 0 18px 40px rgba(35, 48, 46, .12);
+    }
+    .mini-logo {
+      position: fixed;
+      right: 1.4rem;
+      top: 1.1rem;
+      width: 4.2rem;
+      height: 4.2rem;
+      object-fit: contain;
+      z-index: 8;
+      opacity: .78;
+      padding: .35rem;
+      border-radius: 1rem;
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(35, 48, 46, .08);
+      pointer-events: none;
+    }
+    .title-logo {
+      width: 9rem;
+      height: auto;
+      margin-bottom: 1.5rem;
+      padding: .4rem;
+      border-radius: 1rem;
+      background: var(--panel);
+      box-shadow: 0 12px 34px rgba(35, 48, 46, .08);
+    }
+    .family-photo {
+      width: 30rem;
+      height: 20rem;
+      margin-top: 1.2rem;
+      border-radius: 0;
+      border: none;
+      background-image: url('public/family.jpg');
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: transparent;
+      box-shadow: none;
+    }
+    .intro-grid .family-photo { width: 100%; height: 17rem; background-position: left center; }
+    .slide.ask-slide.active { justify-content: flex-start; }
+    .ask-slide h1 { margin-top: 0; }
+    .ask-slide ul { margin-top: 2.4rem; }
+    .center { text-align: center; }
+    .center h1 { margin-left: auto; margin-right: auto; }
+    .footer {
+      position: absolute;
+      left: 7vw;
+      right: 7vw;
+      bottom: 2.5vh;
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+    .controls {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      display: flex;
+      gap: .5rem;
+      z-index: 10;
+    }
+    button {
+      border: 1px solid var(--border);
+      border-radius: .7rem;
+      background: var(--panel);
+      color: var(--fg);
+      padding: .55rem .8rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    @media (max-width: 800px) {
+      body { overflow: auto; }
+      .slide { min-height: 100vh; height: auto; padding: 3rem 1.4rem; }
+      .slide.active { display: block; }
+      .grid-2, .grid-3, .cards { grid-template-columns: 1fr; }
+      .footer, .controls { display: none; }
+    }
+    @page { size: 1280px 720px; margin: 0; }
+    @media print {
+      body { margin: 0; overflow: visible; background: white; }
+      .mini-logo, .controls, .footer { display: none !important; }
+      .slide {
+        display: flex !important;
+        flex-direction: column;
+        justify-content: flex-start;
+        width: 13.333in !important;
+        height: 7.5in !important;
+        margin: 0;
+        overflow: hidden;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide.cover-slide { justify-content: center; }
+      .grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
+      h1 { font-size: clamp(1.8rem, 4vw, 3.6rem); }
+      h2 { font-size: clamp(1.2rem, 2vw, 1.9rem); }
+      h3 { font-size: 1rem; }
+      p, li { font-size: clamp(1rem, 1.5vw, 1.55rem); }
+      .subtitle { font-size: clamp(1.2rem, 2vw, 1.9rem); }
+      .strong { font-size: clamp(1.3rem, 2vw, 2.1rem); }
+      .note { font-size: 1rem; }
+      pre { font-size: clamp(0.6rem, 0.9vw, 0.85rem); }
+      table { font-size: clamp(0.8rem, 1.1vw, 1.05rem); }
+      .card .value { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <img class="mini-logo" src="public/cloud-native-aix-marseille.webp" alt="Cloud Native Aix-Marseille" onerror="this.style.display='none'">
+  <main class="deck">
+    <section class="slide active cover-slide">
+      <h1>Talos + OpenTofu + Proxmox</h1>
+      <div class="subtitle">L'infra Kubernetes immuable, automatisée et sécurisée</div>
+    </section>
+    <section class="slide">
+      <h1>Quoi ?</h1>
+      <ul>
+        <li>Un cluster Kubernetes sur ProxmoxVE (Kimsufi @OVHcloud)</li>
+        <li>Des VMs Talos provisionnées par OpenTofu</li>
+        <li>Un CNI (Container Network Interface) : Cilium</li>
+        <li>Un ingress controller : Traefik</li>
+        <li>Une application web pour le fun</li>
+      </ul>
+    </section>
+    <section class="slide intro-slide">
+      <div class="intro-grid">
+        <div>
+          <h1>Qui ?</h1>
+          <ul>
+            <li>Mikael Batard</li>
+            <li>SRE @ CBA Informatique Libérale</li>
+            <li>❤️ Kubernetes (Talos), GitOps, la sécurité</li>
+            <li>@home : infra hybride avec 2 chiens haute dispo et 2 tortues à latence élevée</li>
+          </ul>
+          <div class="family-photo" aria-label="Photo famille"></div>
+        </div>
+        <div class="intro-side">
+          <div>
+          <h1>Quand ?</h1>
+          <ul>
+            <li>Le jour : Ops qui automatise l'infra, observe la prod, pour ne pas être réveillé la nuit</li>
+            <li>La nuit : ...</li>
+          </ul>
+          </div>
+          <div class="intro-where">
+          <h1>Où ?</h1>
+          <ul>
+            <li>Près d'Avignon</li>
+            <li>LinkedIn : linkedin.com/in/mbatard</li>
+            <li>Bluesky : @mbatard.bsky.social</li>
+            <li>GitHub : github.com/mbatard</li>
+            <li>Site : calmops.fr</li>
+          </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="slide ask-slide">
+      <h1>Et vous ?</h1>
+      <ul>
+        <li>Qui utilise Proxmox ?</li>
+        <li>Qui utilise Terraform ou OpenTofu ?</li>
+        <li>Qui utilise Talos ?</li>
+        <li>Qui opère Kubernetes on premise ?</li>
+        <li>Qui maintient encore des nœuds Kubernetes manuellement ?</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Disclaimer</h1>
+      <ul>
+        <li>Ce talk montre un use case</li>
+        <li>Proxmox peut être remplacé par une autre plateforme</li>
+        <li>OpenTofu peut être remplacé par un autre outil d'IaC</li>
+        <li>Talos peut être remplacé par ...</li>
+        <li>Ma démo, mes IP, mes domaines = utilisez les vôtres</li>
+        <li>⚠️ On va déployer une 'prod' lite et épurée</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Pourquoi Proxmox ?</h1>
+      <ul>
+        <li>Open source, largement adopté</li>
+        <li>Gratuit et pleinement fonctionnel, support entreprise disponible</li>
+        <li>API complète → facilement automatisable avec OpenTofu</li>
+        <li>Alternative crédible à VMware depuis Broadcom</li>
+        <li>Basé sur des standards Linux : Debian, KVM, Ceph…</li>
+        <li>Simple à déployer et à administrer</li>
+      </ul>
+      <p class="note">Info : Proxmox n'est pas requis pour utiliser Talos.</p>
+    </section>
+    <section class="slide">
+      <h1>Pourquoi des VMs ?</h1>
+      <ul>
+        <li>pour une démo : je casse, je recrée, je rejoue</li>
+        <li>pour l'automatisation : OpenTofu pilote Proxmox par API</li>
+        <li>pour mutualiser : Talos, Linux, Windows sur le même cluster</li>
+        <li>pour segmenter : qualif, démo, test, chacun son cluster Kubernetes</li>
+        <li>et si besoin : Talos fonctionne aussi en bare metal</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Pourquoi OpenTofu ?</h1>
+      <ul>
+        <li>Infrastructure déclarative</li>
+        <li>Plan avant application</li>
+        <li>Reproductible & versionnable</li>
+        <li>Automatisable / CI-CD</li>
+        <li>Écosystème de providers & modules</li>
+        <li>Open source (Linux Foundation)</li>
+      </ul>
+      <p class="note">Info : OpenTofu n'est pas requis pour utiliser Talos.</p>
+    </section>
+    <section class="slide">
+      <h1>Bring your own stack</h1>
+      <p>Proxmox + OpenTofu + Talos, c'est mon use case.</p>
+      <ul>
+        <li>Proxmox → VMware, Bare metal, Cloud, ...</li>
+        <li>OpenTofu → Pulumi, Ansible, Puppet, Crossplane, ...</li>
+        <li>Talos → Talos</li>
+        <li>Cilium → Flannel, Calico, ... avec adaptation de kube-proxy</li>
+        <li>Traefik → HAproxy, Envoy Gateway, Kong, ...</li>
+      </ul>
+      <p class="note">Talos n'impose pas une plateforme, il standardise le nœud Kubernetes.</p>
+    </section>
+    <section class="slide">
+      <h1>Et sans Talos ?</h1>
+      <p>Sur un OS classique, le nœud peut devenir un objet que l'on corrige à la main :</p>
+      <ul>
+        <li>SSH ouvert</li>
+        <li>Comptes locaux</li>
+        <li>Shell root</li>
+        <li>Paquets installables</li>
+        <li>Configuration modifiable à la main</li>
+        <li>Drift invisible</li>
+      </ul>
+      <p class="note">Le port 22 c'est pratique, comme une porte de garage ouverte.</p>
+    </section>
+    <section class="slide">
+      <h1>La dérive silencieuse</h1>
+      <p>Une fois connecté, tout devient modifiable sans laisser de trace :</p>
+      <ul>
+        <li>Kubelet et container runtime → ce qui fait tourner les conteneurs</li>
+        <li>Certificats → l'identité du cluster</li>
+        <li>Kernel et systemd → le système entier</li>
+        <li>Règles réseau → le pare-feu</li>
+        <li>Des fichiers changés « juste pour tester »</li>
+      </ul>
+      <p class="note">La dette technique devient une surface d'attaque.</p>
+      <p class="note">Un risque, pas une fatalité : un cluster sur OS classique peut être impeccable.</p>
+    </section>
+    <section class="slide">
+      <h1>Pourquoi Talos ?</h1>
+      <p>C'est un OS spécialisé pour Kubernetes qui apporte une expérience proche du K8s managé :</p>
+      <ul>
+        <li>API pour piloter les nœuds (et CLI dédiée : talosctl)</li>
+        <li>Configuration déclarative et versionnable</li>
+        <li>Bootstrap reproductible</li>
+        <li>Upgrades Talos et Kubernetes</li>
+        <li>Health checks intégrés</li>
+        <li>Peu de colle maison autour du lifecycle</li>
+      </ul>
+      <p class="note">Installable presque partout : Proxmox, VMware, bare metal, cloud, ...</p>
+    </section>
+    <section class="slide">
+      <h1>Et côté sécurité ?</h1>
+      <p>Il réduit la surface d'attaque du système hôte :</p>
+      <ul>
+        <li>Accès admin uniquement via API mTLS</li>
+        <li>Pas de SSH ni de shell interactif</li>
+        <li>Configuration déclarative et auditable</li>
+        <li>Système immuable</li>
+        <li>Base pensée pour les recommandations CIS</li>
+        <li>Pod Security Admission activé par défaut : <code>Baseline</code> imposé, <code>Restricted</code> en warning/audit</li>
+        <li>Conçu pour limiter le drift</li>
+      </ul>
+      <p class="note">Sécurité by design</p>
+    </section>
+    <section class="slide">
+      <h1>Par contre ...</h1>
+      <p>Il ne remplace pas une bonne hygiène de sécurité :</p>
+      <ul>
+        <li>NetworkPolicies</li>
+        <li>Gestion des secrets</li>
+        <li>Scans d'images</li>
+        <li>Bon sens en production</li>
+        <li>...</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Architecture de la démo</h1>
+      <pre>Serveur Proxmox
+  |-- talos-cp-1    10.10.10.101
+  |-- talos-cp-2    10.10.10.102
+  |-- talos-cp-3    10.10.10.103
+  |-- talos-wkr-1   10.10.10.111
+  |-- VIP API       10.10.10.10
+  `-- Traefik LB    10.10.10.200</pre>
+    </section>
+    <section class="slide">
+      <h1>La démo en 5 étapes</h1>
+      <pre>opentofu/talos/
+  01-proxmox-talos/          # VMs + Talos + bootstrap K8s
+  02-cilium-traefik/         # Cilium + Traefik via Helm/OpenTofu
+  03-deploy-application/     # App whoami via OpenTofu/Kubernetes provider
+  04-add-talos-worker-node/  # Ajout d'un worker Talos
+  05-upgrade-talos-and-k8s/  # Upgrade Talos + Kubernetes
+  scripts/                   # Runbook exécutable de démo</pre>
+      <ul>
+        <li>proxmox.tf : VMs, disque, réseau, image Talos</li>
+        <li>talos.tf : MachineConfig, bootstrap, kubeconfig</li>
+        <li>helm.tf : Cilium et Traefik</li>
+        <li>upgrade.env : versions cibles Talos et Kubernetes</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Démo 1 : créer le cluster Kubernetes</h1>
+      <pre>./scripts/01-proxmox-talos.sh</pre>
+      <p>On part d'un Proxmox vide et on arrive à un cluster Kubernetes utilisable.</p>
+      <ul>
+        <li><code>tofu init</code>, <code>tofu plan</code>, <code>tofu apply</code></li>
+        <li>Création des VMs Proxmox</li>
+        <li>Application des MachineConfigs Talos</li>
+        <li>Bootstrap etcd/Kubernetes</li>
+        <li>Export talosconfig et kubeconfig</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Démo 2 : ajouter un CNI et un ingress controller</h1>
+      <pre>./scripts/02-cilium-traefik.sh</pre>
+      <p>Talos démarre Kubernetes sans CNI.</p>
+      <ul>
+        <li><code>tofu init</code>, <code>tofu plan</code>, <code>tofu apply</code></li>
+        <li>Les composants sont installés via Helm</li>
+        <li>Cilium remplace kube-proxy</li>
+        <li>Cilium annonce l'IP LoadBalancer en L2</li>
+        <li>Traefik est exposé sur 10.10.10.200</li>
+        <li>CoreDNS est configuré pour se répartir sur plusieurs nœuds</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Démo 3 : déployer une application</h1>
+      <pre>./scripts/03-deploy-application.sh</pre>
+      <p>On peut déployer ce qu'on veut comme application.</p>
+      <ul>
+        <li><code>tofu init</code>, <code>tofu plan</code>, <code>tofu apply</code></li>
+        <li>Namespace whoami</li>
+        <li>Deployment whoami, 3 réplicas</li>
+        <li>Service ClusterIP</li>
+        <li>IngressRoute Traefik</li>
+        <li>Host demo-meetup.calmops.fr</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Démo 4 : ajouter un nœud worker</h1>
+      <pre>./scripts/04-add-talos-worker-node.sh</pre>
+      <p>Ajouter un nœud, c'est une commande.</p>
+      <ul>
+        <li><code>tofu init</code>, <code>tofu plan</code>, <code>tofu apply</code></li>
+        <li>Crée la VM Proxmox du nouveau worker</li>
+        <li>Réutilise les secrets Talos du cluster</li>
+        <li>Applique la MachineConfig worker</li>
+        <li>Vérifie l'arrivée du nœud</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Démo 5 : mettre à jour Talos + Kubernetes</h1>
+      <pre>./scripts/05-upgrade-talos.sh
+./scripts/05-upgrade-k8s.sh</pre>
+      <p>Créer c'est bien, gérer le cycle de vie c'est mieux.</p>
+      <ul>
+        <li><code>talosctl upgrade -n &lt;NODE_IP&gt; --image &lt;TALOS_IMAGE&gt; --preserve</code></li>
+        <li><code>talosctl -n &lt;NODE_IP&gt; upgrade-k8s --to &lt;K8S_VERSION&gt;</code></li>
+        <li>Paramètres dans 05-upgrade-talos-and-k8s/upgrade.env</li>
+        <li>05-upgrade-talos.sh met à jour talosctl, puis lance talosctl upgrade</li>
+        <li>05-upgrade-k8s.sh met à jour kubectl, puis lance talosctl upgrade-k8s</li>
+        <li>Vérification avec talosctl health et kubectl get nodes</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Et maintenant si on veut mettre en prod ?</h1>
+      <ul>
+        <li>Un vrai cluster Proxmox</li>
+        <li>Sauvegarde et restauration etcd testées</li>
+        <li>State OpenTofu distant</li>
+        <li>Secrets hors repo</li>
+        <li>Supervision, logs, alerting</li>
+        <li>Politique d'upgrade et PRA documentés</li>
+        <li>...</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Ce qu'il faut retenir</h1>
+      <ol>
+        <li>Talos réduit le drift et la surface d'attaque des nœuds Kubernetes.</li>
+        <li>OpenTofu rend le déploiement rejouable, auditable et versionnable.</li>
+        <li>Proxmox donne une plateforme simple et API-friendly pour ce use case.</li>
+        <li>Les VMs rendent les clusters éphémères et faciles à multiplier.</li>
+        <li>Sécurisé by design ne veut pas dire sécurisé sans discipline.</li>
+        <li>Pour l'équipe : moins de corrections manuelles, des upgrades cadrés, moins de logique maison autour du lifecycle Kubernetes.</li>
+      </ol>
+    </section>
+    <section class="slide">
+      <h1>Liens : docs</h1>
+      <div class="grid-2">
+        <div>
+          <h2>Talos</h2>
+          <ul class="links">
+            <li><a href="https://www.talos.dev">Docs officielles</a></li>
+            <li><a href="https://factory.talos.dev">Image Factory</a></li>
+            <li><a href="https://www.talos.dev/latest/talos-guides/install/virtualized-platforms/proxmox/">Talos sur Proxmox</a></li>
+          </ul>
+          <h2>IaC</h2>
+          <ul class="links">
+            <li><a href="https://opentofu.org">OpenTofu</a></li>
+            <li><a href="https://registry.opentofu.org/providers/bpg/proxmox/latest/docs">Provider Proxmox</a></li>
+            <li><a href="https://registry.opentofu.org/providers/siderolabs/talos/latest/docs">Provider Talos</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Add-ons</h2>
+          <ul class="links">
+            <li><a href="https://cilium.io">Cilium</a></li>
+            <li><a href="https://traefik.io">Traefik</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="slide">
+      <h1>Liens : pour aller plus loin</h1>
+      <div class="grid-2">
+        <div>
+          <h2>Talos</h2>
+          <ul class="links">
+            <li><a href="https://www.youtube.com/watch?v=b0ts3lyJAdY">Un cluster de production en un éclair · Quentin Joly</a></li>
+            <li><a href="https://une-tasse-de.cafe/">Blog · Quentin Joly</a></li>
+            <li><a href="https://www.vrchr.fr/posts/2025/11/24/talos-docker-multi-cluster/">Talos, Docker multi-cluster · Rémi Verchère</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Kubernetes</h2>
+          <ul class="links">
+            <li><a href="https://50ndk.zwindler.fr/">50 nuances de Kubernetes · Denis Germain</a></li>
+            <li><a href="https://zwindler.github.io/101-ways-to-deploy-kubernetes/">101 ways to deploy Kubernetes · Denis Germain</a></li>
+          </ul>
+          <h2>Stack complète</h2>
+          <ul class="links">
+            <li><a href="https://j.hommet.net/proxmox-opentofu-talos-kubernetes-as-code/">Proxmox + OpenTofu + Talos as code · Julien Hommet</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="slide">
+      <div class="center"><h1>Merci !</h1>
+      <h2>Des questions ?</h2></div>
+      <div class="grid-2 center" style="margin-top: 2rem;">
+        <div>
+          <img src="public/slides-qr.png" alt="QR code Slides" style="width: 11rem; border-radius: 1rem; box-shadow: 0 10px 30px rgba(35,48,46,.12);">
+          <div class="mt-4" style="font-weight: 700; font-size: 2.8rem;">Slides</div>
+        </div>
+        <div>
+          <img src="public/sources-qr.png" alt="QR code Sources" style="width: 11rem; border-radius: 1rem; box-shadow: 0 10px 30px rgba(35,48,46,.12);">
+          <div class="mt-4" style="font-weight: 700; font-size: 2.8rem;">Sources</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="footer"><span>Talos + OpenTofu + Proxmox</span><span id="counter"></span></div>
+  <div class="controls"><button id="prev">Précédent</button><button id="next">Suivant</button></div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counter = document.getElementById('counter');
+    let current = Number(location.hash.replace('#', '')) || 1;
+    function show(index) {
+      current = Math.max(1, Math.min(slides.length, index));
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === current - 1));
+      counter.textContent = current + ' / ' + slides.length;
+      history.replaceState(null, '', '#' + current);
+    }
+    document.getElementById('prev').addEventListener('click', () => show(current - 1));
+    document.getElementById('next').addEventListener('click', () => show(current + 1));
+    document.addEventListener('keydown', (event) => {
+      if (['ArrowRight', 'PageDown', ' '].includes(event.key)) show(current + 1);
+      if (['ArrowLeft', 'PageUp', 'Backspace'].includes(event.key)) show(current - 1);
+      if (event.key === 'Home') show(1);
+      if (event.key === 'End') show(slides.length);
+    });
+    show(current);
+  </script>
+</body>
+</html>
